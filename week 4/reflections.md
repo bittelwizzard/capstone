@@ -1,0 +1,11 @@
+After the fourth iteration, my process feels stronger but still imperfect. The most informative points behaved like support vectors: for Function 2, the jump from 0.073 to 0.369 near x1 high and x2 mid suggested a sharp transition region; for Function 4, the collapse to -4.41 and rebound to -2.00 around similar coordinates marked a steep boundary; for Function 7, outputs around 0.99 to 1.60 with small coordinate shifts signaled a sensitive ridge. I should sample denser neighborhoods around these points, not only chase global maxima.
+
+I used a Gaussian Process surrogate and explored local response by finite-difference probing around high-UCB candidates. I did not train a full neural network this round because each function still has very few labeled observations, and a GP gave calibrated uncertainty for exploration decisions. Gradients from local probes still gave directional hints: increase dimensions that raised predicted mean while avoiding directions with exploding uncertainty.
+
+If I recast this as good vs bad classification (for example top 30% outputs as good), logistic regression would provide a simple baseline boundary, SVM could model sharper margins with kernels, and a neural net could learn richer curved boundaries. The trade-off is clear: minimizing misclassification can over-exploit known good regions, while exploration requires accepting uncertain points that a classifier might label bad.
+
+Among linear regression, SVM, and neural networks, SVM-style boundaries and GP surrogates felt most appropriate in this data regime. Linear models were too rigid; neural nets were flexible but high variance and tuning-heavy with limited samples. I prioritized interpretability plus uncertainty-aware search over raw flexibility.
+
+From surrogate sensitivity checks, the steepest effects often came from a subset of coordinates (notably late-index dimensions in Functions 5, 6, and 8). I will prioritize perturbing these influential variables first, then refine weaker dimensions.
+
+As a classifier, a neural network would likely approximate the boundary better than logistic regression on nonlinear functions, and backprop gradients could visualize influential directions. But with sparse data, the extra complexity is only partly worth it; simpler models remain more stable and easier to trust for next-round decisions.
