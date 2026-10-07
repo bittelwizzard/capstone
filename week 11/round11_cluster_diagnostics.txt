@@ -1,0 +1,8 @@
+Function 1: cluster 1/3, centroid distance 0.0708, nearest observed distance 0.0528, cluster mean 2.36132e-17, latest output 3.13018e-128.
+Function 2: cluster 2/3, centroid distance 0.0390, nearest observed distance 0.0376, cluster mean 0.400557, latest output 0.259018.
+Function 3: cluster 2/3, centroid distance 0.0400, nearest observed distance 0.0915, cluster mean -0.0712287, latest output -0.10301.
+Function 4: cluster 1/3, centroid distance 0.0723, nearest observed distance 0.0554, cluster mean -8.92776, latest output -37.7431.
+Function 5: cluster 3/3, centroid distance 0.3008, nearest observed distance 0.0997, cluster mean 2818.36, latest output 2085.02.
+Function 6: cluster 3/3, centroid distance 0.1802, nearest observed distance 0.2103, cluster mean -1.20793, latest output -0.995412.
+Function 7: cluster 2/3, centroid distance 0.1359, nearest observed distance 0.0713, cluster mean 0.862457, latest output 0.729125.
+Function 8: cluster 1/3, centroid distance 0.1124, nearest observed distance 0.1534, cluster mean 9.30664, latest output 9.5628.

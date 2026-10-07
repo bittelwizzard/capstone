@@ -1,97 +1,71 @@
-# BBO Capstone Project
+# Black-Box Optimisation Capstone
 
-This repository records a black-box optimisation study across ten rounds. The task is to choose one query point for each of eight unknown functions, observe the returned scalar values and use those results to choose the next queries.
+This repository documents a 13-round search for high-scoring inputs to eight unknown functions. It includes the data, query-generation code, final results, reflections, project documentation and a short presentation.
 
-The project is organised around the data, query history, reproducible scripts and written analysis. It does not depend on a hosted service or a deployed application.
+## Plain-Language Summary
 
-## Project Goal
+This project used 13 rounds of experiments to find high-scoring inputs for eight functions whose formulas were hidden. Each function accepts between two and eight values and returns a score. I began with the supplied examples, then used each new result to guide the next experiment. The search moved from broad exploration to a more focused strategy that tested promising areas while retaining some uncertainty. In the final round, I selected points with a good estimated chance of improving the best result so far. The best observed score improved for seven functions; Function 5 rose from 1,088.86 to 8,662.41. These are observed results, not guaranteed global optima.
 
-Find high-value query points under tight evaluation budgets when function formulas are unknown.
+## Start Here
 
-The optimization loop is:
-1. Propose one query per function.
-2. Receive outputs.
-3. Update surrogate beliefs.
-4. Propose the next round.
+- [Five-page project presentation](docs/bbo_capstone_presentation.pdf)
+- [Datasheet](docs/bbo_datasheet.md)
+- [Model card](docs/bbo_model_card.md)
+- [Repository structure guide](docs/repository_structure.md)
+- [Final-round reflection](week%2013/round13_reflection.md)
+- [Final submitted query points](week%2013/proposed_queries_round13.txt)
+- [Final-round returned results](week%2014/outputs.txt)
 
-## Function Dimensions
+## Final Results
 
-- Function 1: 2D
-- Function 2: 2D
-- Function 3: 3D
-- Function 4: 4D
-- Function 5: 4D
-- Function 6: 5D
-- Function 7: 6D
-- Function 8: 8D
+The table compares the initial best observed output, the best observed output after 13 query rounds, and the final-round output. Output scales differ substantially between functions, so compare values within a function, not across functions.
 
-Submission format per function:
-- `x1-x2-...-xn`
-- Each value is six decimals and starts with `0` (for example: `0.123456-0.654321`)
+| Function | Dimensions | Initial best | Best observed | Final-round output |
+|---|---:|---:|---:|---:|
+| 1 | 2 | approximately 0 | 3.76e-08 | 3.76e-08 |
+| 2 | 2 | 0.611205 | 0.642454 | 0.618589 |
+| 3 | 3 | -0.034835 | -0.034835 | -0.085477 |
+| 4 | 4 | -4.025542 | 0.661510 | 0.576859 |
+| 5 | 4 | 1088.859619 | 8662.405001 | 8662.405001 |
+| 6 | 5 | -0.714265 | -0.328287 | -0.328287 |
+| 7 | 6 | 1.364968 | 2.125210 | 1.880808 |
+| 8 | 8 | 9.598482 | 9.969268 | 9.969268 |
 
-## Documentation
+These are best observed values from the available evaluations, not proof that a global optimum was found. The final query results are in the thirteenth record in `week 14/outputs.txt`.
 
-- [BBO data sheet](docs/bbo_datasheet.md): contents, collection, uses and maintenance of the query data.
-- [BBO model card](docs/bbo_model_card.md): optimisation approach, performance, assumptions and limitations.
-- [Repository structure guide](docs/repository_structure.md): locations of data, scripts and round records.
-- [Round 10 reflection](week%2010/round10_reflection.md): final-round reasoning and critical evaluation.
+## Method
 
-## Repository Structure
+The process used one query per function per round. I fitted a Gaussian-process surrogate to the initial observations and accumulated history, then ranked candidate points using an acquisition rule that balanced predicted value and uncertainty. The strategy evolved from expected improvement to UCB-guided search, added dimension-aware candidate budgets and trend adjustments, and later used clustering to guide local exploration. For the final round, I returned to expected improvement and mixed global candidates with candidates near strong observations and clusters.
 
-- `function_1` to `function_8`: initial input and output arrays.
-- `Week2` through `week 10`: round inputs, outputs, proposal files and reflections.
-- `scripts`: reproducible query-generation scripts.
-- `docs`: the data sheet, model card and repository guide.
-- `hyperparameters.md`: supporting experiments comparing surrogate choices.
-- `*.ipynb`: separate course assignments, not part of the BBO query loop.
-
-## Current Optimization Strategy
-
-The current approach is Gaussian Process Regression with a UCB acquisition rule.
-
-- Surrogate: `GaussianProcessRegressor` with Matern kernel.
-- Acquisition: `UCB = mean + beta * std`.
-- Adaptation: beta scales with dimension and adjusts slightly from recent performance trend.
-- Candidate search: random candidate pool sampled in `[0, 1)` per dimension.
-
-Why this is used:
-- Strong uncertainty handling with very small datasets.
-- Stable behaviour in early, data-sparse rounds.
-- Easy to inspect and debug between submission rounds.
-
-## Libraries and Tools
-
-Core packages:
-- `numpy`
-- `scikit-learn`
-- `scipy`
-
-These are listed in `requirements.txt`.
-
-## Reproducibility
-
-### 1. Environment
-
-From the project root:
+The final generator is [scripts/propose_week13_queries.py](scripts/propose_week13_queries.py). The submission can be reproduced from the project root:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python scripts/propose_week13_queries.py
 ```
 
-### 2. Generate the latest query set
+## Data and Files
 
-```powershell
-.venv\Scripts\python.exe scripts/propose_week10_queries.py
-```
+The eight functions have between two and eight input dimensions. The repository contains 175 supplied initial observations and 104 query records from 13 rounds, for 279 input-output records. Initial data are in `function_1` through `function_8`; weekly inputs and outputs are kept in their original folders. The final proposal is in `week 13`, and its returned results are in `week 14`.
 
-Optional output file:
+For example, inspect the [Function 1 initial inputs](function_1/initial_inputs.npy) and [initial outputs](function_1/initial_outputs.npy), or review the [final-round input history](week%2014/inputs.txt) and [returned values](week%2014/outputs.txt).
 
-```powershell
-.venv\Scripts\python.exe scripts/propose_week10_queries.py --out "week 10\proposed_queries_round10.txt"
-```
+The initial NumPy arrays total about 10 KB, and no project dataset approaches 50 MB. The data are included directly in the repository; no external dataset link is needed. The function formulas and their real-world meanings were not provided, so this project does not assign them domain interpretations.
 
-## Project Records
+## Repository Layout
 
-The weekly folders preserve the original round records and reflections. The root-level lesson and assignment files are supporting course material; the active optimisation workflow is contained in the function folders, weekly BBO records, `scripts` and `docs`.
+- `function_1` to `function_8`: supplied input/output arrays.
+- `Week2`, `week3`, and `week 4` to `week 14`: query histories, outputs, proposals and reflections.
+- `scripts`: query-generation and presentation code.
+- `docs`: datasheet, model card, presentation and repository guide.
+- `Templates`: course-provided datasheet and model-card examples.
+
+## Environment
+
+Dependencies are listed in [requirements.txt](requirements.txt): NumPy, SciPy, scikit-learn and PyMuPDF. Query generation uses NumPy and scikit-learn; PyMuPDF builds the presentation.
+
+## Repository
+
+Public project repository: [github.com/bittelwizzard/capstone](https://github.com/bittelwizzard/capstone)

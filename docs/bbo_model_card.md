@@ -6,7 +6,7 @@
 
 **Type:** Sequential black-box optimisation method
 
-**Version:** 1.0, used for the tenth query round
+**Version:** Final project iteration, round 13
 
 **Task:** Choose one input query for each of eight unknown functions and use the returned results to choose the next queries.
 
@@ -32,19 +32,19 @@ The approach is not suitable for:
 
 ## Details: Ten-Round Development
 
-The project used one query per function in each round. The method developed as more results became available.
+The project used one query per function in each round. The approach changed as the data and observed outcomes accumulated.
 
-**Early rounds:** I used the initial observations to learn the general scale and behaviour of each function. The first queries were more exploratory because there was very little information about the search space.
+**Round 1:** I used Gaussian-process expected improvement, comparing several kernel choices to find possible improvements over the best known result.
 
-**Middle rounds:** I began using the previous query results more directly. I compared promising results with less familiar areas and adjusted the search instead of selecting points at random. The main goal was to balance trying likely good areas with improving coverage.
+**Round 2:** I moved to an exploration-weighted upper confidence bound (UCB) strategy because the early data left substantial uncertainty.
 
-**Later rounds:** I used a Gaussian process to estimate which candidate points looked promising and which areas were still uncertain. I used an upper confidence bound to combine these two ideas. This meant that the approach did not always choose the point with the highest predicted result.
+**Rounds 3–10:** I added dimension-aware candidate budgets and small adjustments to the exploration weight based on recent results. The GP used a Matern kernel with a noise term. I also ran a separate neural-network comparison, but neural networks were not used to generate submitted queries.
 
-**Rounds 8 to 9:** The candidate pools were increased for functions with more input variables. This was intended to reduce the chance of missing useful areas in the larger search spaces. I also paid more attention to boundary behaviour and possible interactions between variables.
+**Rounds 11–12:** I grouped observed inputs into clusters and gave a small preference to candidates near the group with the strongest average output, while retaining the GP uncertainty signal.
 
-**Round 10:** I used all available initial and previous-round observations. I used fixed random seeds, kept every input between zero and one and made a small adjustment based on whether the latest result improved or worsened. A worsening result led to more exploration; an improving result led to slightly more focus on promising areas.
+**Round 13:** With no later query round to benefit from information alone, I selected candidates by expected improvement over the best observed result. The search mixed global random candidates with local candidates near strong observations and the best cluster. It used fixed seeds, rounded candidates to the submission precision and rejected previously observed inputs.
 
-The round-10 process is recorded in [scripts/propose_week10_queries.py](../scripts/propose_week10_queries.py). The reflections in [week 10/round10_reflection.md](../week%2010/round10_reflection.md) explain the decisions and concerns in more detail.
+The final query-generation code is [scripts/propose_week13_queries.py](../scripts/propose_week13_queries.py). The final proposals and diagnostics are in the [week 13 folder](../week%2013/), and their returned values are in [week 14/outputs.txt](../week%2014/outputs.txt).
 
 ## How Decisions Were Made
 
@@ -61,26 +61,26 @@ The main strength of this process is that it uses the limited query budget delib
 
 ## Performance
 
-The following figures use the initial outputs and the nine recorded round-10 history evaluations. The main metrics were the best observed output and the output from the latest recorded round. These are search metrics, not prediction accuracy or proof of finding a global optimum.
+The following figures compare the best initial output, best observed output after 13 rounds and the final-round output. These are optimisation outcomes, not prediction accuracy. Output scales differ by function, and a best observed value is not proof of a global optimum.
 
-| Function | Best observed output | Latest recorded output | Initial best output |
+| Function | Initial best | Best observed | Final-round output |
 |---|---:|---:|---:|
-| 1 | 0.000000 | 0.000000 | 0.000000 |
-| 2 | 0.632668 | -0.133267 | 0.611205 |
-| 3 | -0.034835 | -0.063980 | -0.034835 |
-| 4 | 0.661510 | -34.856150 | -4.025542 |
-| 5 | 4718.699964 | 3951.071060 | 1088.859618 |
-| 6 | -0.469094 | -2.403142 | -0.714265 |
-| 7 | 1.970877 | 1.970877 | 1.364968 |
-| 8 | 9.916499 | 9.853338 | 9.598482 |
+| 1 | ~0 | 3.76e-08 | 3.76e-08 |
+| 2 | 0.611205 | 0.642454 | 0.618589 |
+| 3 | -0.034835 | -0.034835 | -0.085477 |
+| 4 | -4.025542 | 0.661510 | 0.576859 |
+| 5 | 1088.859619 | 8662.405001 | 8662.405001 |
+| 6 | -0.714265 | -0.328287 | -0.328287 |
+| 7 | 1.364968 | 2.125210 | 1.880808 |
+| 8 | 9.598482 | 9.969268 | 9.969268 |
 
-The strongest results were recorded for Functions 5, 7 and 8. Function 2 also produced a positive result. Functions 1, 3 and 6 remained weak in the recorded data. Function 4 showed unstable behaviour: it reached a positive value earlier but had a much lower latest result.
+The best observed output improved over the initial best for seven functions; Function 3 did not improve. Function 5 had the largest numerical gain, although its output scale cannot be compared directly with the other functions. The final result was below the best-so-far result for Functions 2, 3, 4 and 7, showing that recent performance was not uniformly improving.
 
-The method also produced valid formatted query points for all eight functions. It kept the inputs in the required range and used fixed settings so the round-10 queries could be reproduced.
+The method produced valid formatted query points for all eight functions. The final generator saved its seeds and candidate settings. GP fitting emitted convergence and parameter-bound warnings for some functions; predictions and uncertainty should therefore be treated cautiously.
 
 ## Assumptions and Limitations
 
-The approach assumes that nearby input points often have related results. This allows the model to learn from previous queries. The assumption may fail when a function has a narrow peak, a sudden change, a threshold or strong variable interactions.
+The approach assumes that nearby input points often have related results. This helps the model use previous observations but may fail around narrow peaks, sudden changes, thresholds or strong variable interactions. Exact repeated inputs returned different outputs in Functions 2, 3 and 6. This shows repeat variability in the records, but its source was not established.
 
 The approach also assumes that the input range is zero to one, that results from different rounds are comparable and that the goal is to maximise the output. It treats a poor recent result as a reason to explore more, but this could overreact to one unusual result.
 
@@ -91,22 +91,23 @@ The main limitations are:
 - Later queries are adaptive and are not an even sample of the search space.
 - Random candidate generation can miss a narrow high-value region.
 - The model may favour boundaries because several useful-looking points are near zero or one.
-- There were no repeated measurements to check unusual results.
-- The method did not save every candidate score or runner-up choice.
+- Only a small number of repeated inputs are present, and the reason for output differences is unknown.
+- Some GP fits reached parameter bounds or generated convergence warnings.
+- Candidate scores are saved for the final round, but not consistently for every earlier round.
 
 These limitations mean that the best observed result is not necessarily the global optimum.
 
 ## Ethical Considerations and Transparency
 
-This project does not use personal, demographic or sensitive data. The main ethical issue is being accurate about what the results show.
+This project does not use personal, demographic or sensitive data. The main ethical issue is being accurate about what the results show. The main methodological risks are over-trusting sparse model predictions, adaptive sampling bias and treating an isolated high score as a reliable pattern.
 
-The data and scripts are kept in the repository so that the query process can be reviewed and repeated. The weekly input files, output files and reflections show how decisions changed over time. This supports transparency because another researcher can see both the successful results and the failed or weak queries.
+The data and scripts are kept in the repository so that the query process can be reviewed and repeated. The weekly input files, output files, diagnostics and reflections show how decisions changed over time. Repeated input records with differing outputs are retained rather than silently merged.
 
 The results should not be presented as an unbiased survey of the search space. They should also not be used to claim that the functions were fully understood. Anyone adapting the method to a real problem should record the data available at each decision, the query budget, the model settings and the uncertainty about untested regions.
 
 ## Reproducibility and Future Detail
 
-The approach can be reproduced using the repository data, [scripts/propose_week10_queries.py](../scripts/propose_week10_queries.py), [requirements.txt](../requirements.txt) and the recorded query files.
+The final proposal can be reproduced using the repository data, [scripts/propose_week13_queries.py](../scripts/propose_week13_queries.py), [requirements.txt](../requirements.txt) and the round-13 history in [week 13](../week%2013/). The final outputs are stored in [week 14](../week%2014/).
 
 Adding more detail would improve the model card. In particular, future versions should record the date of each round, software versions, candidate-pool sizes, model settings, selected scores and the next-best candidate. This information would make it easier to explain individual decisions and compare the approach with another method.
 
